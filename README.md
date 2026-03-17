@@ -158,6 +158,27 @@ La logique est entièrement **isolée** de l'interface et du réseau.
 
 > Voir `JOURNAL_ITERATION.md` pour le détail de chaque itération.
 
+### Couverture de code (Coverage)
+
+La couverture est mesurée avec **Vitest + v8** et couvre uniquement les fichiers de `src/`.
+
+```bash
+pnpm --filter test-game test:coverage
+```
+
+Un rapport est généré dans le terminal et en HTML dans `Test/coverage/index.html`.
+
+**Seuils KPI configurés (minimum requis) :**
+
+| Métrique | Seuil |
+|----------|-------|
+| Statements | 80% |
+| Branches | 80% |
+| Functions | 80% |
+| Lines | 80% |
+
+> Résultat actuel : **100%** sur toutes les métriques.
+
 ---
 
 ## Déploiement sur Render (Blueprint)
