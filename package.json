@@ -5,6 +5,7 @@
     "scripts": {
         "dev:front": "pnpm --filter front dev",
         "dev:back": "pnpm --filter back dev",
-        "dev": "pnpm run -r dev"
+        "dev": "pnpm run -r dev",
+        "test": "pnpm --filter test-game test"
     }
 }
