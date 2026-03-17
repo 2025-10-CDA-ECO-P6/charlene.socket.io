@@ -1,9 +1,10 @@
-# Socket Chat & Memory Game — Monorepo
+# Socket Chat, Memory & Puissance 4 — Monorepo
 
-Ce projet est un monorepo regroupant deux applications :
+Ce projet est un monorepo regroupant plusieurs applications :
 
 - **Un chat en temps réel** avec rooms (Socket.IO)
 - **Un mini-jeu Memory** développé en TDD dans le cadre du diplôme CDA
+- **Un Puissance 4 multijoueur** en temps réel, développé en TDD
 
 ---
 
@@ -70,7 +71,7 @@ pnpm dev:front
 pnpm dev
 ```
 
-### 5. Lancer les tests du jeu Memory
+### 5. Lancer les tests (Memory + Puissance 4)
 
 ```bash
 pnpm test
@@ -85,7 +86,7 @@ pnpm test
 | `pnpm dev:front` | Démarre le frontend React Router |
 | `pnpm dev:back` | Démarre le backend Express/Socket.IO |
 | `pnpm dev` | Lance tout le monorepo en mode dev |
-| `pnpm test` | Exécute les tests unitaires du jeu Memory |
+| `pnpm test` | Exécute les tests unitaires (Memory + Puissance 4) |
 | `pnpm --filter test-game test:watch` | Tests en mode watch |
 | `pnpm --filter test-game test:coverage` | Rapport de couverture |
 | `pnpm add <pkg> --filter front` | Ajoute un package au frontend |
@@ -96,6 +97,8 @@ pnpm test
 ## Backend — Socket Chat
 
 Le serveur écoute sur `process.env.PORT` (ou 3000 en local) et expose les événements Socket.IO suivants :
+
+### Chat
 
 | Événement (reçu) | Description |
 |------------------|-------------|
@@ -110,6 +113,22 @@ Le serveur écoute sur `process.env.PORT` (ou 3000 en local) et expose les évé
 | `room_message` | Message dans une room (avec horodatage) |
 | `chat message` | Message global (avec horodatage) |
 
+### Puissance 4
+
+| Événement (reçu) | Description |
+|------------------|-------------|
+| `create_game` | Créer une nouvelle partie |
+| `join_game` | Rejoindre une partie existante (code room) |
+| `drop_piece` | Jouer un jeton dans une colonne |
+
+| Événement (émis) | Description |
+|------------------|-------------|
+| `game_created` | Confirmation de création + roomId |
+| `game_start` | La partie démarre (board initial, joueur courant) |
+| `game_update` | État du plateau mis à jour après un coup |
+| `game_over` | Fin de partie (winner, reason, board final) |
+| `join_error` | Erreur lors de la tentative de rejoindre |
+
 ---
 
 ## Frontend — Routes
@@ -120,6 +139,8 @@ Le serveur écoute sur `process.env.PORT` (ou 3000 en local) et expose les évé
 | `/chat` | Chat global en temps réel |
 | `/memory` | Jeu Memory |
 | `/:roomId` | Chat dans une room spécifique |
+| `/puissance4` | Lobby Puissance 4 (créer / rejoindre une partie) |
+| `/puissance4/:roomId` | Plateau de jeu Puissance 4 en temps réel |
 
 ---
 
@@ -189,6 +210,44 @@ Un rapport est généré dans le terminal et en HTML dans `Test/coverage/index.h
 | Branches | 80% | 100% |
 | Functions | 80% | 100% |
 | Lines | 80% | 100% |
+
+---
+
+## Jeu Puissance 4 — TDD + Socket.IO (CDA)
+
+> Jeu multijoueur en temps réel développé en TDD dans le cadre du diplôme **Concepteur Développeur d'Applications**.
+
+### Règles du jeu
+
+- Grille de **6 lignes × 7 colonnes**
+- **2 joueurs** : Joueur 1 (🔴) et Joueur 2 (🟡), le Joueur 1 commence
+- Le jeton **tombe en bas** de la colonne choisie (gravité)
+- On ne peut pas jouer dans une **colonne pleine**
+- Victoire si un joueur aligne **4 jetons** horizontalement, verticalement ou en diagonale
+- Grille pleine sans alignement → **match nul**
+
+### Logique métier (`/Test/src/puissance4.ts`)
+
+| Fonction | Description |
+|----------|-------------|
+| `createGame()` | Crée une nouvelle partie (grille vide, joueur 1) |
+| `dropPiece(game, col)` | Joue un jeton dans la colonne (gravité + alternance) |
+| `checkWinner(board)` | Détecte un vainqueur (1, 2 ou null) |
+| `isDraw(board)` | Vérifie si la grille est pleine sans vainqueur |
+| `findWinningCells(board)` | Retourne les 4 positions gagnantes pour la mise en surbrillance |
+
+### Organisation des tests (`/Test/src/puissance4.test.ts`)
+
+Les 22 tests sont classés en 4 catégories :
+
+| Catégorie | Nb | Description |
+|-----------|----|-------------|
+| **Parcours nominal** | 10 | Création, gravité, alternance, toutes les victoires, match nul |
+| **Cas d'erreur** | 3 | Victoire J2, pas de vainqueur en cours de partie, colonne pleine |
+| **Cas limites** | 4 | Colonne hors-bornes, colonne négative, `isDraw` sur grille vide ou non pleine |
+| **findWinningCells** | 5 | Set vide, victoire dans les 4 directions |
+
+> Voir `JOURNAL_ITERATION_PUISSANCE4.md` pour le détail de chaque itération.
 
 ---
 
