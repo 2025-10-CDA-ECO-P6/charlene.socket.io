@@ -5,6 +5,59 @@ import { socket } from "../../lib/socket"
 type Cell = 1 | 2 | null
 
 const EMPTY_BOARD: Cell[][] = Array.from({ length: 6 }, () => Array(7).fill(null))
+const LEADERBOARD_KEY = "puissance4-leaderboard"
+
+interface Score {
+  pseudo: string
+  wins: number
+  losses: number
+}
+
+function findWinningCells(board: Cell[][]): Set<string> {
+  const check = (cells: [number, number][]) => {
+    const [first, ...rest] = cells
+    const val = board[first[0]][first[1]]
+    return val && rest.every(([r, c]) => board[r][c] === val)
+  }
+  const toKey = (cells: [number, number][]) => new Set(cells.map(([r, c]) => `${r}-${c}`))
+
+  for (let row = 0; row < 6; row++)
+    for (let col = 0; col < 4; col++) {
+      const cells: [number, number][] = [[row, col], [row, col+1], [row, col+2], [row, col+3]]
+      if (check(cells)) return toKey(cells)
+    }
+  for (let row = 0; row < 3; row++)
+    for (let col = 0; col < 7; col++) {
+      const cells: [number, number][] = [[row, col], [row+1, col], [row+2, col], [row+3, col]]
+      if (check(cells)) return toKey(cells)
+    }
+  for (let row = 0; row < 3; row++)
+    for (let col = 0; col < 4; col++) {
+      const cells: [number, number][] = [[row, col], [row+1, col+1], [row+2, col+2], [row+3, col+3]]
+      if (check(cells)) return toKey(cells)
+    }
+  for (let row = 3; row < 6; row++)
+    for (let col = 0; col < 4; col++) {
+      const cells: [number, number][] = [[row, col], [row-1, col+1], [row-2, col+2], [row-3, col+3]]
+      if (check(cells)) return toKey(cells)
+    }
+  return new Set()
+}
+
+function saveScore(pseudo: string, won: boolean) {
+  try {
+    const scores: Score[] = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || "[]")
+    const existing = scores.find(s => s.pseudo === pseudo)
+    if (existing) {
+      if (won) existing.wins++
+      else existing.losses++
+    } else {
+      scores.push({ pseudo, wins: won ? 1 : 0, losses: won ? 0 : 1 })
+    }
+    const sorted = scores.sort((a, b) => b.wins - a.wins).slice(0, 3)
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(sorted))
+  } catch {}
+}
 
 export default function Puissance4Board() {
   const { roomId } = useParams<{ roomId: string }>()
@@ -12,10 +65,13 @@ export default function Puissance4Board() {
   const navigate = useNavigate()
 
   const myPlayer: 1 | 2 = state?.myPlayer ?? 1
+  const pseudo: string = state?.pseudo || "Anonyme"
+
   const [board, setBoard] = useState<Cell[][]>(state?.initialBoard ?? EMPTY_BOARD)
   const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(state?.initialCurrentPlayer ?? 1)
   const [waiting, setWaiting] = useState(myPlayer === 1 && !state?.initialBoard)
   const [gameOver, setGameOver] = useState<{ winner: 1 | 2 | null, reason: string } | null>(null)
+  const [winningCells, setWinningCells] = useState<Set<string>>(new Set())
   const [hoveredCol, setHoveredCol] = useState<number | null>(null)
 
   useEffect(() => {
@@ -33,7 +89,14 @@ export default function Puissance4Board() {
     })
 
     socket.on("game_over", ({ winner, reason, board }: { winner: 1 | 2 | null, reason: string, board?: Cell[][] }) => {
-      if (board) setBoard(board)
+      if (board) {
+        setBoard(board)
+        if (winner) setWinningCells(findWinningCells(board))
+      }
+      if (reason !== "disconnect") {
+        const won = winner === myPlayer
+        saveScore(pseudo, won)
+      }
       setGameOver({ winner, reason })
     })
 
@@ -42,7 +105,7 @@ export default function Puissance4Board() {
       socket.off("game_update")
       socket.off("game_over")
     }
-  }, [])
+  }, [myPlayer, pseudo])
 
   function handleColClick(col: number) {
     if (waiting || gameOver || currentPlayer !== myPlayer) return
@@ -55,12 +118,11 @@ export default function Puissance4Board() {
     <div className="flex flex-col items-center gap-6 py-6">
       <h1 className="text-3xl font-bold text-gray-800">🔴🟡 Puissance 4</h1>
 
-      {/* Code de la room */}
       <div className="text-sm text-gray-500">
-        Code de la partie : <span className="font-mono font-bold text-gray-800 tracking-widest">{roomId}</span>
+        Code : <span className="font-mono font-bold text-gray-800 tracking-widest">{roomId}</span>
+        {" · "}Tu joues <span className="font-semibold">{pseudo}</span> ({myPlayer === 1 ? "🔴" : "🟡"})
       </div>
 
-      {/* Statut */}
       {waiting && (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-6 py-3 rounded-lg text-sm">
           ⏳ En attente d'un adversaire... Partage le code <strong>{roomId}</strong>
@@ -86,16 +148,14 @@ export default function Puissance4Board() {
               onClick={() => navigate("/puissance4")}
               className="bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 rounded-lg text-sm"
             >
-              Nouvelle partie
+              Retour au lobby
             </button>
           </div>
         </div>
       )}
 
-      {/* Plateau */}
       {!waiting && (
         <div className="bg-blue-600 p-3 rounded-2xl shadow-lg">
-          {/* Flèches de sélection de colonne */}
           <div className="grid grid-cols-7 gap-2 mb-1">
             {Array.from({ length: 7 }, (_, col) => (
               <button
@@ -111,33 +171,36 @@ export default function Puissance4Board() {
             ))}
           </div>
 
-          {/* Grille */}
           {board.map((row, rowIndex) => (
             <div key={rowIndex} className="grid grid-cols-7 gap-2 mb-2">
-              {row.map((cell, colIndex) => (
-                <button
-                  key={colIndex}
-                  onClick={() => handleColClick(colIndex)}
-                  onMouseEnter={() => setHoveredCol(colIndex)}
-                  onMouseLeave={() => setHoveredCol(null)}
-                  disabled={!isMyTurn}
-                  className={`w-10 h-10 rounded-full transition-all duration-150 ${
-                    cell === 1
-                      ? "bg-red-500 shadow-inner"
-                      : cell === 2
-                        ? "bg-yellow-400 shadow-inner"
-                        : hoveredCol === colIndex && isMyTurn
-                          ? myPlayer === 1 ? "bg-red-200" : "bg-yellow-200"
-                          : "bg-blue-200"
-                  }`}
-                />
-              ))}
+              {row.map((cell, colIndex) => {
+                const key = `${rowIndex}-${colIndex}`
+                const isWinning = winningCells.has(key)
+                return (
+                  <button
+                    key={colIndex}
+                    onClick={() => handleColClick(colIndex)}
+                    onMouseEnter={() => setHoveredCol(colIndex)}
+                    onMouseLeave={() => setHoveredCol(null)}
+                    disabled={!isMyTurn}
+                    className={`w-10 h-10 rounded-full transition-all duration-150
+                      ${isWinning ? "ring-4 ring-white scale-110 animate-pulse" : ""}
+                      ${cell === 1
+                        ? "bg-red-500 shadow-inner"
+                        : cell === 2
+                          ? "bg-yellow-400 shadow-inner"
+                          : hoveredCol === colIndex && isMyTurn
+                            ? myPlayer === 1 ? "bg-red-200" : "bg-yellow-200"
+                            : "bg-blue-200"
+                      }`}
+                  />
+                )
+              })}
             </div>
           ))}
         </div>
       )}
 
-      {/* Légende */}
       {!waiting && (
         <div className="flex gap-6 text-sm text-gray-600">
           <span className="flex items-center gap-2">

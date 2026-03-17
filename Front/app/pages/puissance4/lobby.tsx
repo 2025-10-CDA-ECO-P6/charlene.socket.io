@@ -2,23 +2,41 @@ import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router"
 import { socket } from "../../lib/socket"
 
+const LEADERBOARD_KEY = "puissance4-leaderboard"
+
+interface Score {
+  pseudo: string
+  wins: number
+  losses: number
+}
+
+function getLeaderboard(): Score[] {
+  try { return JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || "[]") }
+  catch { return [] }
+}
+
 export default function Puissance4Lobby() {
   const [roomCode, setRoomCode] = useState("")
+  const [pseudo, setPseudo] = useState(() => {
+    try { return localStorage.getItem("puissance4-pseudo") || "" } catch { return "" }
+  })
   const [error, setError] = useState("")
   const [creating, setCreating] = useState(false)
+  const [leaderboard, setLeaderboard] = useState<Score[]>([])
   const navigate = useNavigate()
   const pendingRoomId = useRef<string | null>(null)
 
   useEffect(() => {
+    setLeaderboard(getLeaderboard())
     socket.connect()
 
     socket.on("game_created", ({ roomId }: { roomId: string }) => {
-      navigate(`/puissance4/${roomId}`, { state: { myPlayer: 1 } })
+      navigate(`/puissance4/${roomId}`, { state: { myPlayer: 1, pseudo } })
     })
 
     socket.on("game_start", ({ board, currentPlayer }: { board: (1 | 2 | null)[][], currentPlayer: 1 | 2 }) => {
       navigate(`/puissance4/${pendingRoomId.current}`, {
-        state: { myPlayer: 2, initialBoard: board, initialCurrentPlayer: currentPlayer },
+        state: { myPlayer: 2, pseudo, initialBoard: board, initialCurrentPlayer: currentPlayer },
       })
     })
 
@@ -32,7 +50,12 @@ export default function Puissance4Lobby() {
       socket.off("game_start")
       socket.off("join_error")
     }
-  }, [navigate])
+  }, [navigate, pseudo])
+
+  function handlePseudoChange(value: string) {
+    setPseudo(value)
+    try { localStorage.setItem("puissance4-pseudo", value) } catch {}
+  }
 
   function handleCreate() {
     setError("")
@@ -40,7 +63,7 @@ export default function Puissance4Lobby() {
     socket.emit("create_game")
   }
 
-  function handleJoin(e: React.FormEvent) {
+  function handleJoin(e: React.SyntheticEvent) {
     e.preventDefault()
     const code = roomCode.trim().toUpperCase()
     if (!code) return
@@ -50,9 +73,19 @@ export default function Puissance4Lobby() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-10 py-10">
+    <div className="flex flex-col items-center gap-8 py-10">
       <h1 className="text-4xl font-bold text-gray-800">🔴🟡 Puissance 4</h1>
       <p className="text-gray-500">Jeu multijoueur en temps réel</p>
+
+      {/* Pseudo */}
+      <input
+        type="text"
+        value={pseudo}
+        onChange={e => handlePseudoChange(e.target.value)}
+        placeholder="Ton pseudo"
+        maxLength={20}
+        className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400 w-64"
+      />
 
       <div className="flex flex-col md:flex-row gap-8 w-full max-w-xl">
 
@@ -92,8 +125,26 @@ export default function Puissance4Lobby() {
         </div>
       </div>
 
-      {error && (
-        <p className="text-red-500 text-sm">{error}</p>
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+
+      {/* Palmarès */}
+      {leaderboard.length > 0 && (
+        <div className="w-64">
+          <h2 className="text-sm font-semibold text-gray-600 mb-2 text-center">🏆 Palmarès</h2>
+          <div className="bg-white border border-gray-200 rounded-xl shadow overflow-hidden">
+            {leaderboard.map((s, i) => (
+              <div key={i} className={`px-3 py-2 ${i < leaderboard.length - 1 ? "border-b border-gray-100" : ""}`}>
+                <div className="flex items-center gap-2">
+                  <span>{["🥇", "🥈", "🥉"][i]}</span>
+                  <span className="font-semibold text-sm text-gray-800 truncate">{s.pseudo}</span>
+                </div>
+                <div className="text-xs text-gray-500 ml-6">
+                  {s.wins} victoire{s.wins > 1 ? "s" : ""} · {s.losses} défaite{s.losses > 1 ? "s" : ""}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   )
