@@ -29,13 +29,18 @@ function saveScore(pseudo: string, won: boolean) {
   } catch {}
 }
 
+function getLeaderboard(): Score[] {
+  try { return JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || "[]") }
+  catch { return [] }
+}
+
 export default function Puissance4Board() {
   const { roomId } = useParams<{ roomId: string }>()
   const { state } = useLocation()
   const navigate = useNavigate()
 
   const myPlayer: 1 | 2 = state?.myPlayer ?? 1
-  const pseudo: string = state?.pseudo || "Anonyme"
+  const pseudo: string = state?.pseudo || ""
 
   const [board, setBoard] = useState<Cell[][]>(state?.initialBoard ?? EMPTY_BOARD)
   const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(state?.initialCurrentPlayer ?? 1)
@@ -43,6 +48,7 @@ export default function Puissance4Board() {
   const [gameOver, setGameOver] = useState<{ winner: 1 | 2 | null, reason: string } | null>(null)
   const [winningCells, setWinningCells] = useState<Set<string>>(new Set())
   const [hoveredCol, setHoveredCol] = useState<number | null>(null)
+  const [leaderboard, setLeaderboard] = useState<Score[]>(() => getLeaderboard())
 
   useEffect(() => {
     if (!socket.connected) socket.connect()
@@ -63,9 +69,10 @@ export default function Puissance4Board() {
         setBoard(board)
         if (winner) setWinningCells(findWinningCells(board))
       }
-      if (reason !== "disconnect") {
+      if (reason !== "disconnect" && pseudo) {
         const won = winner === myPlayer
         saveScore(pseudo, won)
+        setLeaderboard(getLeaderboard())
       }
       setGameOver({ winner, reason })
     })
@@ -83,6 +90,7 @@ export default function Puissance4Board() {
   }
 
   const isMyTurn = !waiting && !gameOver && currentPlayer === myPlayer
+  const myToken = myPlayer === 1 ? "🔴" : "🟡"
 
   return (
     <div className="flex flex-col items-center gap-6 py-6">
@@ -90,7 +98,10 @@ export default function Puissance4Board() {
 
       <div className="text-sm text-gray-500">
         Code : <span className="font-mono font-bold text-gray-800 tracking-widest">{roomId}</span>
-        {" · "}Tu joues <span className="font-semibold">{pseudo}</span> ({myPlayer === 1 ? "🔴" : "🟡"})
+        {pseudo
+          ? <>{" · "}<span className="font-semibold">{pseudo}</span>, Tu joues les {myToken}</>
+          : <>{" · "}Tu joues les {myToken}</>
+        }
       </div>
 
       {waiting && (
@@ -102,7 +113,7 @@ export default function Puissance4Board() {
       {!waiting && !gameOver && (
         <div className={`px-6 py-2 rounded-lg text-sm font-medium ${isMyTurn ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}`}>
           {isMyTurn
-            ? `C'est ton tour ! Tu joues les ${myPlayer === 1 ? "🔴" : "🟡"}`
+            ? `C'est ton tour ! Tu joues les ${myToken}`
             : `Tour de l'adversaire ${currentPlayer === 1 ? "🔴" : "🟡"}`}
         </div>
       )}
@@ -118,67 +129,90 @@ export default function Puissance4Board() {
               onClick={() => navigate("/puissance4")}
               className="bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 rounded-lg text-sm"
             >
-              Retour au lobby
+              Jouer une autre partie
             </button>
           </div>
         </div>
       )}
 
       {!waiting && (
-        <div className="bg-blue-600 p-3 rounded-2xl shadow-lg">
-          <div className="grid grid-cols-7 gap-2 mb-1">
-            {Array.from({ length: 7 }, (_, col) => (
-              <button
-                key={col}
-                onClick={() => handleColClick(col)}
-                onMouseEnter={() => setHoveredCol(col)}
-                onMouseLeave={() => setHoveredCol(null)}
-                disabled={!isMyTurn}
-                className={`h-6 flex items-center justify-center text-white text-xs transition-opacity ${isMyTurn ? "opacity-100 cursor-pointer" : "opacity-0 cursor-default"}`}
-              >
-                {hoveredCol === col && isMyTurn ? "▼" : ""}
-              </button>
-            ))}
-          </div>
-
-          {board.map((row, rowIndex) => (
-            <div key={rowIndex} className="grid grid-cols-7 gap-2 mb-2">
-              {row.map((cell, colIndex) => {
-                const key = `${rowIndex}-${colIndex}`
-                const isWinning = winningCells.has(key)
-                return (
+        <div className="flex flex-col md:flex-row items-start gap-6">
+          {/* Plateau */}
+          <div className="flex flex-col items-center gap-4">
+            <div className="bg-blue-600 p-3 rounded-2xl shadow-lg">
+              <div className="grid grid-cols-7 gap-2 mb-1">
+                {Array.from({ length: 7 }, (_, col) => (
                   <button
-                    key={colIndex}
-                    onClick={() => handleColClick(colIndex)}
-                    onMouseEnter={() => setHoveredCol(colIndex)}
+                    key={col}
+                    onClick={() => handleColClick(col)}
+                    onMouseEnter={() => setHoveredCol(col)}
                     onMouseLeave={() => setHoveredCol(null)}
                     disabled={!isMyTurn}
-                    className={`w-10 h-10 rounded-full transition-all duration-150
-                      ${isWinning ? "ring-4 ring-white scale-110 animate-pulse" : ""}
-                      ${cell === 1
-                        ? "bg-red-500 shadow-inner"
-                        : cell === 2
-                          ? "bg-yellow-400 shadow-inner"
-                          : hoveredCol === colIndex && isMyTurn
-                            ? myPlayer === 1 ? "bg-red-200" : "bg-yellow-200"
-                            : "bg-blue-200"
-                      }`}
-                  />
-                )
-              })}
-            </div>
-          ))}
-        </div>
-      )}
+                    className={`h-6 flex items-center justify-center text-white text-xs transition-opacity ${isMyTurn ? "opacity-100 cursor-pointer" : "opacity-0 cursor-default"}`}
+                  >
+                    {hoveredCol === col && isMyTurn ? "▼" : ""}
+                  </button>
+                ))}
+              </div>
 
-      {!waiting && (
-        <div className="flex gap-6 text-sm text-gray-600">
-          <span className="flex items-center gap-2">
-            <span className="w-4 h-4 rounded-full bg-red-500 inline-block" /> Joueur 1 {myPlayer === 1 ? "(toi)" : ""}
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="w-4 h-4 rounded-full bg-yellow-400 inline-block" /> Joueur 2 {myPlayer === 2 ? "(toi)" : ""}
-          </span>
+              {board.map((row, rowIndex) => (
+                <div key={rowIndex} className="grid grid-cols-7 gap-2 mb-2">
+                  {row.map((cell, colIndex) => {
+                    const key = `${rowIndex}-${colIndex}`
+                    const isWinning = winningCells.has(key)
+                    return (
+                      <button
+                        key={colIndex}
+                        onClick={() => handleColClick(colIndex)}
+                        onMouseEnter={() => setHoveredCol(colIndex)}
+                        onMouseLeave={() => setHoveredCol(null)}
+                        disabled={!isMyTurn}
+                        className={`w-10 h-10 rounded-full transition-all duration-150
+                          ${isWinning ? "ring-4 ring-white scale-110 animate-pulse" : ""}
+                          ${cell === 1
+                            ? "bg-red-500 shadow-inner"
+                            : cell === 2
+                              ? "bg-yellow-400 shadow-inner"
+                              : hoveredCol === colIndex && isMyTurn
+                                ? myPlayer === 1 ? "bg-red-200" : "bg-yellow-200"
+                                : "bg-blue-200"
+                          }`}
+                      />
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-6 text-sm text-gray-600">
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded-full bg-red-500 inline-block" /> Joueur 1 {myPlayer === 1 ? "(toi)" : ""}
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded-full bg-yellow-400 inline-block" /> Joueur 2 {myPlayer === 2 ? "(toi)" : ""}
+              </span>
+            </div>
+          </div>
+
+          {/* Palmarès */}
+          {leaderboard.length > 0 && (
+            <div className="w-52">
+              <h2 className="text-sm font-semibold text-gray-600 mb-2 text-center">🏆 Palmarès</h2>
+              <div className="bg-white border border-gray-200 rounded-xl shadow overflow-hidden">
+                {leaderboard.map((s, i) => (
+                  <div key={i} className={`px-3 py-2 ${i < leaderboard.length - 1 ? "border-b border-gray-100" : ""}`}>
+                    <div className="flex items-center gap-2">
+                      <span>{["🥇", "🥈", "🥉"][i]}</span>
+                      <span className="font-semibold text-sm text-gray-800 truncate">{s.pseudo}</span>
+                    </div>
+                    <div className="text-xs text-gray-500 ml-6">
+                      {s.wins} victoire{s.wins > 1 ? "s" : ""} · {s.losses} défaite{s.losses > 1 ? "s" : ""}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
