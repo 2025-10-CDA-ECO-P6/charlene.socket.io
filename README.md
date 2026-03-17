@@ -130,11 +130,12 @@ Le serveur écoute sur `process.env.PORT` (ou 3000 en local) et expose les évé
 
 ### Règles du jeu
 
-- Le plateau contient des cartes retournées **face cachée**
+- Le plateau contient des cartes réparties en **paires**, toutes **face cachée**
 - Le joueur retourne **deux cartes** à chaque tour
-- Si elles affichent le **même symbole** → elles sont définitivement **trouvées**
+- Si elles affichent le **même symbole** → elles sont définitivement **trouvées** et restent visibles
 - Si elles sont **différentes** → elles reviennent **face cachée**
 - Une carte déjà trouvée **ne peut plus être retournée**
+- Il est **impossible de matcher une carte avec elle-même**
 - La partie est **gagnée** quand toutes les paires ont été trouvées
 
 ### Logique métier (`/Test/src/memory.ts`)
@@ -153,10 +154,22 @@ Le développement a suivi le cycle **Red → Green → Refactor** :
 1. **Red** — Écriture d'un test décrivant un comportement attendu, qui échoue
 2. **Green** — Implémentation du minimum de code pour faire passer le test
 3. **Refactor** — Amélioration du code sans casser les tests existants
+
 Chaque règle métier a été introduite par un test **avant** son implémentation.
 La logique est entièrement **isolée** de l'interface et du réseau.
 
 > Voir `JOURNAL_ITERATION.md` pour le détail de chaque itération.
+
+### Organisation des tests (`/Test/src/memory.test.ts`)
+
+Les 13 tests sont classés en 4 catégories :
+
+| Catégorie | Nb | Description |
+|-----------|----|-------------|
+| **Parcours nominal** | 5 | Le jeu se déroule normalement, sans erreur |
+| **Cas d'erreur** | 3 | Le joueur fait une action incorrecte (mauvaise paire, carte déjà matchée) |
+| **Cas aux frontières** | 1 | Valeur à la limite du domaine valide (1 seul symbole) |
+| **Cas limites** | 4 | Entrées extrêmes ou invalides (plateau vide, id inexistant, même carte deux fois) |
 
 ### Couverture de code (Coverage)
 
@@ -170,14 +183,12 @@ Un rapport est généré dans le terminal et en HTML dans `Test/coverage/index.h
 
 **Seuils KPI configurés (minimum requis) :**
 
-| Métrique | Seuil |
-|----------|-------|
-| Statements | 80% |
-| Branches | 80% |
-| Functions | 80% |
-| Lines | 80% |
-
-> Résultat actuel : **100%** sur toutes les métriques.
+| Métrique | Seuil | Résultat actuel |
+|----------|-------|-----------------|
+| Statements | 80% | 100% |
+| Branches | 80% | 100% |
+| Functions | 80% | 100% |
+| Lines | 80% | 100% |
 
 ---
 

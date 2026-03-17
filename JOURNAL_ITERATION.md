@@ -1,7 +1,6 @@
 # Journal d'itération — Jeu Memory en TDD
 
 > Projet : Mini-jeu Memory
-> Diplôme : Concepteur Développeur d'Applications (CDA)
 > Méthodologie : Test Driven Development (Red → Green → Refactor)
 
 ---
@@ -19,6 +18,8 @@ Avant de commencer le développement, les règles métier ont été listées et 
 | 5   | Deux cartes retournées avec des symboles différents reviennent face cachée |
 | 6   | Une carte déjà trouvée ne peut plus être retournée |
 | 7   | La partie est gagnée quand toutes les paires ont été trouvées |
+| 8   | Une carte ne peut pas être matchée avec elle-même (même id des deux côtés) |
+| 9   | Un plateau vide ne constitue pas une partie gagnée |
 
 ---
 
@@ -285,24 +286,97 @@ export function isGameWon(board: Card[]): boolean {
 
 ---
 
+## Itération 8 — Cas limite : matcher une carte avec elle-même
+
+### Règle métier
+
+Une carte ne peut pas être comparée avec elle-même. Si `id1 === id2`, le plateau reste inchangé.
+
+### Test écrit (Red)
+
+```typescript
+it('Ne doit pas matcher une carte avec elle-même', () => {
+  let board = createBoard(['🐶'])
+  board = flipCard(board, 0)
+  const newBoard = checkMatch(board, 0, 0)
+  expect(newBoard[0].isMatched).toBe(false)
+})
+```
+
+### Bug identifié
+
+Sans garde, `card1.symbol === card2.symbol` est toujours `true` quand `id1 === id2` — la carte se matchait avec elle-même.
+
+### Implémentation (Green)
+
+Ajout d'une garde en tête de `checkMatch` :
+
+```typescript
+export function checkMatch(board: Card[], id1: number, id2: number): Card[] {
+  if (id1 === id2) return board
+  // ...
+}
+```
+
+### Résultat
+
+✅ Tests passants — bug réel détecté et corrigé grâce au cas limite.
+
+---
+
+## Itération 9 — Cas limite : `isGameWon` sur plateau vide
+
+### Règle métier
+
+Un plateau vide ne constitue pas une partie gagnée — `isGameWon([])` doit retourner `false`.
+
+### Test écrit (Red)
+
+```typescript
+it('Doit retourner false si le plateau est vide', () => {
+  expect(isGameWon([])).toBe(false)
+})
+```
+
+### Bug identifié
+
+`Array.every()` retourne `true` sur un tableau vide en JavaScript — comportement natif du langage qui produisait un faux positif silencieux.
+
+### Implémentation (Green)
+
+Ajout d'une garde sur la longueur du tableau :
+
+```typescript
+export function isGameWon(board: Card[]): boolean {
+  if (board.length === 0) return false
+  return board.every(card => card.isMatched)
+}
+```
+
+### Résultat
+
+✅ Tests passants — comportement natif JavaScript identifié et corrigé. Sans ce test, le bug serait passé inaperçu.
+
+---
+
 ## Bilan
 
 ### Statistiques
 
 | Métrique | Valeur |
 | --- | --- |
-| Règles métier testées | 7   |
-| Tests unitaires écrits | 8   |
-| Fonctions implémentées | 4   |
-| Faux positifs détectés et corrigés | 1   |
+| Règles métier testées | 9 |
+| Tests unitaires écrits | 13 |
+| Fonctions implémentées | 4 |
+| Faux positifs détectés et corrigés | 1 |
+| Bugs trouvés par les cas limites | 2 |
+| Couverture de code | 100% |
 
-### Observations sur la démarche TDD
+### Catégories de tests
 
-- L'écriture des tests **avant** l'implémentation a forcé une réflexion préalable sur le comportement attendu
-- Un faux positif a été détecté à l'itération 5 : le test passait sans tester réellement le comportement. La démarche TDD a permis de l'identifier et de le corriger
-- Les fonctions sont toutes **pures** (sans effets de bord) grâce à la pression des tests : il est plus simple de tester une fonction qui retourne une nouvelle valeur qu'une fonction qui modifie l'état en place
-- Le code est resté **minimal** à chaque étape, évitant la sur-ingénierie
-
-### Points d'amélioration possibles
-- Tester le mélange aléatoire des cartes
-- Intégrer la logique dans l'interface React via Socket.IO
+| Catégorie | Nb | Description |
+|-----------|----|-------------|
+| Parcours nominal | 5 | Le jeu se déroule normalement |
+| Cas d'erreur | 3 | Action incorrecte du joueur |
+| Cas aux frontières | 1 | Valeur minimale valide (1 symbole) |
+| Cas limites | 4 | Entrées extrêmes ou invalides |
