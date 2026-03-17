@@ -113,7 +113,23 @@ export default function MemoryBoard() {
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <h1 className="text-3xl font-bold text-gray-800">Memory Game</h1>
+      <div className="flex items-center gap-3">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="10" width="20" height="28" rx="3" fill="#6366f1" />
+          <rect x="4" y="12" width="16" height="24" rx="2" fill="#818cf8" />
+          <text x="12" y="28" textAnchor="middle" fontSize="14" fill="white">?</text>
+          <rect x="26" y="10" width="20" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" strokeWidth="1.5" />
+          <text x="36" y="29" textAnchor="middle" fontSize="18">&#11088;</text>
+        </svg>
+        <h1 className="text-3xl font-bold text-gray-800">Memory Game</h1>
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="10" width="20" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" strokeWidth="1.5" />
+          <text x="12" y="29" textAnchor="middle" fontSize="18">&#11088;</text>
+          <rect x="26" y="10" width="20" height="28" rx="3" fill="#6366f1" />
+          <rect x="28" y="12" width="16" height="24" rx="2" fill="#818cf8" />
+          <text x="36" y="28" textAnchor="middle" fontSize="14" fill="white">?</text>
+        </svg>
+      </div>
 
       {/* Barre de contrôles */}
       <div className="flex items-center gap-4 flex-wrap justify-center text-gray-600">

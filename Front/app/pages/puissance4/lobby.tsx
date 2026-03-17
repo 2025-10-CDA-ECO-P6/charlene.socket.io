@@ -2,19 +2,6 @@ import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router"
 import { socket } from "../../lib/socket"
 
-const LEADERBOARD_KEY = "puissance4-leaderboard"
-
-interface Score {
-  pseudo: string
-  wins: number
-  losses: number
-}
-
-function getLeaderboard(): Score[] {
-  try { return JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || "[]") }
-  catch { return [] }
-}
-
 export default function Puissance4Lobby() {
   const [roomCode, setRoomCode] = useState("")
   const [pseudo, setPseudo] = useState(() => {
@@ -22,12 +9,10 @@ export default function Puissance4Lobby() {
   })
   const [error, setError] = useState("")
   const [creating, setCreating] = useState(false)
-  const [leaderboard, setLeaderboard] = useState<Score[]>([])
   const navigate = useNavigate()
   const pendingRoomId = useRef<string | null>(null)
 
   useEffect(() => {
-    setLeaderboard(getLeaderboard())
     socket.connect()
 
     socket.on("game_created", ({ roomId }: { roomId: string }) => {
@@ -126,26 +111,6 @@ export default function Puissance4Lobby() {
       </div>
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
-
-      {/* Palmarès */}
-      {leaderboard.length > 0 && (
-        <div className="w-64">
-          <h2 className="text-sm font-semibold text-gray-600 mb-2 text-center">🏆 Palmarès</h2>
-          <div className="bg-white border border-gray-200 rounded-xl shadow overflow-hidden">
-            {leaderboard.map((s, i) => (
-              <div key={i} className={`px-3 py-2 ${i < leaderboard.length - 1 ? "border-b border-gray-100" : ""}`}>
-                <div className="flex items-center gap-2">
-                  <span>{["🥇", "🥈", "🥉"][i]}</span>
-                  <span className="font-semibold text-sm text-gray-800 truncate">{s.pseudo}</span>
-                </div>
-                <div className="text-xs text-gray-500 ml-6">
-                  {s.wins} victoire{s.wins > 1 ? "s" : ""} · {s.losses} défaite{s.losses > 1 ? "s" : ""}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
