@@ -150,12 +150,12 @@ io.on("connection", (socket) => {
         const isDraw = game.board.every(row => row.every(cell => cell !== null));
 
         if (winner) {
-            io.to(roomId).emit("game_over", { winner, reason: "win" });
+            io.to(roomId).emit("game_over", { winner, reason: "win", board: game.board });
             games.delete(roomId);
             return;
         }
         if (isDraw) {
-            io.to(roomId).emit("game_over", { winner: null, reason: "draw" });
+            io.to(roomId).emit("game_over", { winner: null, reason: "draw", board: game.board });
             games.delete(roomId);
             return;
         }

@@ -32,7 +32,8 @@ export default function Puissance4Board() {
       setCurrentPlayer(currentPlayer)
     })
 
-    socket.on("game_over", ({ winner, reason }: { winner: 1 | 2 | null, reason: string }) => {
+    socket.on("game_over", ({ winner, reason, board }: { winner: 1 | 2 | null, reason: string, board?: Cell[][] }) => {
+      if (board) setBoard(board)
       setGameOver({ winner, reason })
     })
 
