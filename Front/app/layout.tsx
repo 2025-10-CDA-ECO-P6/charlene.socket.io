@@ -33,6 +33,9 @@ export default function LayoutApp() {
                         <a className="mr-5 hover:text-gray-900" href="/memory">
                             Memory
                         </a>
+                        <a className="mr-5 hover:text-gray-900" href="/puissance4">
+                            Puissance 4
+                        </a>
                     </nav>
                     <button className="inline-flex items-center bg-cyan-500 text-white border-0 py-1 px-3 focus:outline-none hover:bg-cyan-600 rounded text-base mt-4 md:mt-0">
                         Incoming

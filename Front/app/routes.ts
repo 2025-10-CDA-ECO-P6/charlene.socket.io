@@ -6,5 +6,7 @@ export default [
     route("/chat", "routes/chat.tsx"),
     route("/chat/:roomId", "routes/roomId.tsx"),
     route("/memory", "routes/memory.tsx"),
+    route("/puissance4", "routes/puissance4.tsx"),
+    route("/puissance4/:roomId", "routes/puissance4Game.tsx"),
   ]),
 ] satisfies RouteConfig

@@ -158,7 +158,7 @@ Le développement a suivi le cycle **Red → Green → Refactor** :
 Chaque règle métier a été introduite par un test **avant** son implémentation.
 La logique est entièrement **isolée** de l'interface et du réseau.
 
-> Voir `JOURNAL_ITERATION.md` pour le détail de chaque itération.
+> Voir `JOURNAL_ITERATION_MEMORY.md` pour le détail de chaque itération.
 
 ### Organisation des tests (`/Test/src/memory.test.ts`)
 
@@ -213,7 +213,8 @@ Le fichier `render.yaml` à la racine décrit les deux services à déployer.
 
 - Voir `/Front/explication.md` pour un guide Socket.IO détaillé
 - Voir `/Back/server.js` pour la logique temps réel
-- Voir `JOURNAL_ITERATION.md` pour le journal de développement TDD du Memory
+- Voir `JOURNAL_ITERATION_MEMORY.md` pour le journal de développement TDD du Memory
+- Voir `JOURNAL_ITERATION_PUISSANCE4.md` pour le journal de développement TDD du Puissance 4
 
 ---
 
