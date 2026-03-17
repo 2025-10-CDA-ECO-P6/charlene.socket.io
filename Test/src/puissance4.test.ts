@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createGame, dropPiece, checkWinner, isDraw } from './puissance4'
+import { createGame, dropPiece, checkWinner, isDraw, findWinningCells } from './puissance4'
 
 // ============================================================
 // PARCOURS NOMINAL — le jeu se déroule normalement
@@ -174,5 +174,82 @@ describe('Cas limites', () => {
     let game = createGame()
     game = dropPiece(game, 0)
     expect(isDraw(game.board)).toBe(false)
+  })
+})
+
+// ============================================================
+// FIND WINNING CELLS — positions des 4 jetons gagnants
+// ============================================================
+
+describe('findWinningCells', () => {
+  it('Doit retourner un Set vide si aucun vainqueur', () => {
+    const game = createGame()
+    expect(findWinningCells(game.board).size).toBe(0)
+  })
+
+  it('Doit retourner les 4 positions d\'une victoire horizontale', () => {
+    let game = createGame()
+    game = dropPiece(game, 0) // J1
+    game = dropPiece(game, 0) // J2
+    game = dropPiece(game, 1) // J1
+    game = dropPiece(game, 1) // J2
+    game = dropPiece(game, 2) // J1
+    game = dropPiece(game, 2) // J2
+    game = dropPiece(game, 3) // J1 → victoire ligne 5
+    const cells = findWinningCells(game.board)
+    expect(cells).toEqual(new Set(['5-0', '5-1', '5-2', '5-3']))
+  })
+
+  it('Doit retourner les 4 positions d\'une victoire verticale', () => {
+    let game = createGame()
+    game = dropPiece(game, 0) // J1
+    game = dropPiece(game, 1) // J2
+    game = dropPiece(game, 0) // J1
+    game = dropPiece(game, 1) // J2
+    game = dropPiece(game, 0) // J1
+    game = dropPiece(game, 1) // J2
+    game = dropPiece(game, 0) // J1 → victoire colonne 0
+    const cells = findWinningCells(game.board)
+    expect(cells).toEqual(new Set(['2-0', '3-0', '4-0', '5-0']))
+  })
+
+  it('Doit retourner les 4 positions d\'une victoire en diagonale descendante', () => {
+    let game = createGame()
+    // Cible J1 : (2,0) (3,1) (4,2) (5,3)
+    game = dropPiece(game, 3) // J1 → (5,3)
+    game = dropPiece(game, 2) // J2 → (5,2)
+    game = dropPiece(game, 2) // J1 → (4,2)
+    game = dropPiece(game, 1) // J2 → (5,1)
+    game = dropPiece(game, 6) // J1 → (5,6) filler
+    game = dropPiece(game, 1) // J2 → (4,1)
+    game = dropPiece(game, 1) // J1 → (3,1)
+    game = dropPiece(game, 0) // J2 → (5,0)
+    game = dropPiece(game, 5) // J1 → (5,5) filler
+    game = dropPiece(game, 0) // J2 → (4,0)
+    game = dropPiece(game, 1) // J1 → (2,1) filler
+    game = dropPiece(game, 0) // J2 → (3,0)
+    game = dropPiece(game, 0) // J1 → (2,0)
+    const cells = findWinningCells(game.board)
+    expect(cells).toEqual(new Set(['2-0', '3-1', '4-2', '5-3']))
+  })
+
+  it('Doit retourner les 4 positions d\'une victoire en diagonale montante', () => {
+    let game = createGame()
+    // Cible J1 : (5,0) (4,1) (3,2) (2,3)
+    game = dropPiece(game, 0) // J1 → (5,0)
+    game = dropPiece(game, 1) // J2 → (5,1)
+    game = dropPiece(game, 1) // J1 → (4,1)
+    game = dropPiece(game, 2) // J2 → (5,2)
+    game = dropPiece(game, 4) // J1 → (5,4) filler
+    game = dropPiece(game, 2) // J2 → (4,2)
+    game = dropPiece(game, 2) // J1 → (3,2)
+    game = dropPiece(game, 3) // J2 → (5,3)
+    game = dropPiece(game, 5) // J1 → (5,5) filler
+    game = dropPiece(game, 3) // J2 → (4,3)
+    game = dropPiece(game, 6) // J1 → (5,6) filler
+    game = dropPiece(game, 3) // J2 → (3,3)
+    game = dropPiece(game, 3) // J1 → (2,3)
+    const cells = findWinningCells(game.board)
+    expect(cells).toEqual(new Set(['5-0', '4-1', '3-2', '2-3']))
   })
 })
