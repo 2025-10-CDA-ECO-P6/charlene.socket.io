@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: socket-io-back
+    runtime: node
+    rootDir: Back
+    buildCommand: pnpm install
+    startCommand: pnpm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+  - type: web
+    name: socket-io-front
+    runtime: node
+    rootDir: Front
+    buildCommand: pnpm install && pnpm build
+    startCommand: pnpm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_BACKEND_URL
+        fromService:
+          name: socket-io-back
+          type: web
+          property: host
