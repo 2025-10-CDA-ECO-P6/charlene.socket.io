@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import type { Route } from "./+types/room";
 
-const socket = io("https://socket-io-1-ub8p.onrender.com");
+const socket = io("https://charlene-socket-io.onrender.com");
 
 interface Message {
     text: string;
