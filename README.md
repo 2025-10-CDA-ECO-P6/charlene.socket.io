@@ -1,47 +1,50 @@
-# 🐾 Socket Chat & Memory Game — Monorepo
+# Socket Chat & Memory Game — Monorepo
 
-Ce projet est un monorepo moderne regroupant deux applications :
+Ce projet est un monorepo regroupant deux applications :
 
-- **Un chat en temps réel** (Socket Chat)
+- **Un chat en temps réel** avec rooms (Socket.IO)
 - **Un mini-jeu Memory** développé en TDD dans le cadre du diplôme CDA
 
 ---
 
-## 🛠️ Stack technique
+## Stack technique
 
-### Chat
-- **Next.js** (App Router, Server Actions)
-- **React** (frontend)
-- **Socket.IO** (temps réel)
-- **Prisma** + **PostgreSQL** (ORM & base de données)
-- **Tailwind CSS** & **Shadcn UI** (UI moderne)
-- **Zustand** (state management)
-- **next-i18next** (i18n)
-- **Stripe** (paiement, si besoin)
+### Frontend (`/Front`)
+- **React 19** + **React Router v7** (SSR)
+- **Socket.IO Client** (temps réel)
+- **Tailwind CSS v4** (UI)
+- **Recharts** (graphiques)
+- **TypeScript**
 
-### Memory Game
+### Backend (`/Back`)
+- **Node.js** + **Express v5**
+- **Socket.IO v4** (rooms, messages globaux, compteur de connexions)
+- **CORS** configuré pour le local et Render
+
+### Tests (`/Test`)
 - **Vitest** (tests unitaires, TDD)
-- **TypeScript** (typage strict)
+- **TypeScript**
 
 ### Commun
 - **pnpm** (gestionnaire de monorepo)
-- **TypeScript** (typage strict)
+- **Render** (déploiement via Blueprint — `render.yaml`)
 
 ---
 
-## 📦 Structure du monorepo
+## Structure du monorepo
 
 ```
-/Front      # Frontend Next.js/React (Chat)
+/Front      # Frontend React Router v7
 /Back       # Backend Node.js/Express/Socket.IO
 /Test       # Logique métier du jeu Memory + tests Vitest
+render.yaml             # Blueprint Render (déploiement automatisé)
 pnpm-workspace.yaml
 package.json (racine)
 ```
 
 ---
 
-## 🚀 Démarrage rapide
+## Démarrage rapide
 
 ### 1. Installer les dépendances
 
@@ -75,11 +78,11 @@ pnpm test
 
 ---
 
-## 🛠️ Scripts utiles
+## Scripts utiles
 
 | Commande | Description |
 |----------|-------------|
-| `pnpm dev:front` | Démarre le frontend Next.js |
+| `pnpm dev:front` | Démarre le frontend React Router |
 | `pnpm dev:back` | Démarre le backend Express/Socket.IO |
 | `pnpm dev` | Lance tout le monorepo en mode dev |
 | `pnpm test` | Exécute les tests unitaires du jeu Memory |
@@ -90,36 +93,37 @@ pnpm test
 
 ---
 
-## 🖥️ Frontend — Socket Chat (Next.js)
+## Backend — Socket Chat
 
-- App Router (`/app`)
-- Server Actions pour la logique serveur
-- Authentification JWT sécurisée (cookie httpOnly)
-- Zustand pour le state global
-- Tailwind CSS + Shadcn UI pour l'UI
-- next-i18next pour l'internationalisation
-- Dark/Light mode avec persistance
-- Axios pour les requêtes HTTP
+Le serveur écoute sur `process.env.PORT` (ou 3000 en local) et expose les événements Socket.IO suivants :
 
-## ⚡ Backend — Socket Chat (Express/Socket.IO)
+| Événement (reçu) | Description |
+|------------------|-------------|
+| `join_room` | Rejoindre une room |
+| `leave_room` | Quitter une room |
+| `room_message` | Envoyer un message dans une room |
+| `chat message` | Message global (broadcast à tous) |
 
-- Socket.IO pour le chat temps réel (rooms, messages globaux)
-- Prisma pour l'accès PostgreSQL
-- Sécurité : validation Zod, headers, CORS, CSRF, XSS
-- Stripe (paiement sécurisé, webhooks)
-
-## 🗄️ Base de données
-
-- PostgreSQL (local ou cloud)
-- Modélisation via Prisma (`/Back/prisma/schema.prisma`)
-
-## 🌍 Internationalisation
-
-- next-i18next, fichiers JSON par langue dans `/Front/public/locales/`
+| Événement (émis) | Description |
+|------------------|-------------|
+| `users count` | Nombre d'utilisateurs connectés |
+| `room_message` | Message dans une room (avec horodatage) |
+| `chat message` | Message global (avec horodatage) |
 
 ---
 
-## 🃏 Jeu Memory — TDD (CDA)
+## Frontend — Routes
+
+| Route | Description |
+|-------|-------------|
+| `/` | Page d'accueil |
+| `/chat` | Chat global en temps réel |
+| `/memory` | Jeu Memory |
+| `/:roomId` | Chat dans une room spécifique |
+
+---
+
+## Jeu Memory — TDD (CDA)
 
 > Projet réalisé dans le cadre du diplôme **Concepteur Développeur d'Applications**.
 > Objectif : appliquer la méthodologie **Test Driven Development** sur la logique métier d'un mini-jeu.
@@ -149,7 +153,6 @@ Le développement a suivi le cycle **Red → Green → Refactor** :
 1. **Red** — Écriture d'un test décrivant un comportement attendu, qui échoue
 2. **Green** — Implémentation du minimum de code pour faire passer le test
 3. **Refactor** — Amélioration du code sans casser les tests existants
-
 Chaque règle métier a été introduite par un test **avant** son implémentation.
 La logique est entièrement **isolée** de l'interface et du réseau.
 
@@ -157,30 +160,24 @@ La logique est entièrement **isolée** de l'interface et du réseau.
 
 ---
 
-## 🎨 UI/UX
+## Déploiement sur Render (Blueprint)
 
-- Composants réutilisables, typés, sans logique métier dans le JSX
-- Responsive, dark/light mode, accessibilité
+Le fichier `render.yaml` à la racine décrit les deux services à déployer.
 
-## 🔒 Sécurité
-
-- JWT en cookie httpOnly, jamais accessible côté client
-- Validation et sanitation de toutes les entrées
-- Headers de sécurité (CSP, etc.)
-- CSRF sur les formulaires
-- Jamais d'erreur technique exposée côté client
-
-## 💡 Bonnes pratiques
-
-- Utiliser pnpm partout (pas de npm/yarn)
-- Ajouter les dépendances avec `--filter front` ou `--filter back`
-- Logique métier isolée, composants purs
-- Utiliser les hooks Zustand pour le state
-- Protéger les routes sensibles côté serveur
+1. **Push** sur GitHub
+2. Sur Render → **New → Blueprint Instance**
+3. Sélectionner le repo → **Apply**
+4. Render déploie automatiquement le back et le front, et injecte l'URL du back dans le front via `VITE_BACKEND_URL`
 
 ---
 
-## 📚 Documentation
+## Bonnes pratiques
+
+- Utiliser `pnpm` partout (pas de npm/yarn)
+- Ajouter les dépendances avec `--filter front` ou `--filter back`
+- Logique métier isolée dans `/Test`, sans dépendance à l'UI
+
+## Documentation
 
 - Voir `/Front/explication.md` pour un guide Socket.IO détaillé
 - Voir `/Back/server.js` pour la logique temps réel
@@ -189,5 +186,3 @@ La logique est entièrement **isolée** de l'interface et du réseau.
 ---
 
 **Développé pour l'apprentissage et la collaboration.**
-
-N'hésitez pas à contribuer ou à poser vos questions ! 🚀
