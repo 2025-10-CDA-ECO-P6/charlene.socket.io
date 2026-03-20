@@ -42,6 +42,13 @@ const formatMessage = (message) => {
 // UTILITAIRES — PUISSANCE 4
 // ============================================================
 
+const generateRoomId = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let id = "";
+    for (let i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
+    return id;
+};
+
 const checkWinner = (board) => {
     // Horizontal
     for (let row = 0; row < 6; row++)
@@ -106,7 +113,9 @@ io.on("connection", (socket) => {
     // --------------------------------------------------------
 
     socket.on("create_game", () => {
-        const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+        let roomId;
+        do { roomId = generateRoomId(); } while (games.has(roomId));
+
         socket.join(roomId);
         games.set(roomId, {
             board: Array.from({ length: 6 }, () => Array(7).fill(null)),
@@ -114,7 +123,7 @@ io.on("connection", (socket) => {
             players: [socket.id],
         });
         socket.emit("game_created", { roomId });
-        console.log(`Partie Puissance 4 créée : ${roomId}`);
+        console.log(`[P4] Partie créée : ${roomId}`);
     });
 
     socket.on("join_game", (roomId) => {
@@ -125,7 +134,7 @@ io.on("connection", (socket) => {
         socket.join(roomId);
         game.players.push(socket.id);
         io.to(roomId).emit("game_start", { board: game.board, currentPlayer: game.currentPlayer });
-        console.log(`Partie ${roomId} démarrée`);
+        console.log(`[P4] Partie ${roomId} démarrée`);
     });
 
     socket.on("drop_piece", ({ roomId, col }) => {
@@ -133,9 +142,8 @@ io.on("connection", (socket) => {
         if (!game) return;
 
         const playerIndex = game.players.indexOf(socket.id);
-        if (playerIndex + 1 !== game.currentPlayer) return; // pas le bon tour
+        if (playerIndex + 1 !== game.currentPlayer) return;
 
-        // Gravité : placer le jeton en bas de la colonne
         let placed = false;
         for (let row = 5; row >= 0; row--) {
             if (game.board[row][col] === null) {
@@ -144,7 +152,7 @@ io.on("connection", (socket) => {
                 break;
             }
         }
-        if (!placed) return; // colonne pleine
+        if (!placed) return;
 
         const winner = checkWinner(game.board);
         const isDraw = game.board.every(row => row.every(cell => cell !== null));
@@ -173,7 +181,6 @@ io.on("connection", (socket) => {
         connectedUsers--;
         io.emit("users count", connectedUsers);
 
-        // Notifier l'adversaire si une partie Puissance 4 était en cours
         for (const [roomId, game] of games.entries()) {
             if (game.players.includes(socket.id)) {
                 io.to(roomId).emit("game_over", { winner: null, reason: "disconnect" });
