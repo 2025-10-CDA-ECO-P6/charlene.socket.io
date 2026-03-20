@@ -2,10 +2,12 @@
 
 Ce projet est un monorepo regroupant plusieurs applications :
 
-- **Un chat en temps réel** avec rooms (Socket.IO)
+- **Un chat en temps réel** avec rooms (Socket.IO) (Pas fait par moi-même dans ce repository)
 - **Un mini-jeu Memory** développé en TDD dans le cadre du diplôme CDA
 - **Un Puissance 4 multijoueur** en temps réel, développé en TDD
 
+## Démonstration
+https://www.loom.com/share/fc10ea643de84d38bcb99f996521b2fe
 ---
 
 ## Stack technique
